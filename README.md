@@ -1,0 +1,4 @@
+# RideOps Queue Control
+Open index.html in Chrome or Safari. No installation, server or internet required. The supplied CSV is embedded at build time. To refresh the same-schema snapshot, replace the CSV and run `python3 build.py`; update the snapshot cutoff in template.html if needed.
+
+Demo: inspect the 48 open tickets, filter engineering or P1, search a ticket, read its recommended action, record checks/owner/next update and save. Reload to verify persistence, then export the filtered queue. Reset clears local notes. Notes do not change source ticket status or count as closures. Data and notes stay in the browser; local storage may be blocked on file URLs. If so, run `python3 -m http.server 8000` in this folder and open http://localhost:8000. No real ticket system integration. Use privately; do not publish the case data.
