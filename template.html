@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RideOps | Queue Control</title>
+<style>
+:root{--ink:#172c40;--mut:#526579;--line:#dbe3ec;--bg:#f3f6fa;--card:#fff;--acc:#0f6e56;--accbg:#e6f3ef;--red:#b42318;--redbg:#fde8e6;--amb:#a15c07;--ambbg:#fdf1de;--blu:#1d4f91;--blubg:#e6eefa}
+*{box-sizing:border-box}
+body{font:14px/1.45 system-ui,-apple-system,Segoe UI,sans-serif;margin:0;color:var(--ink);background:var(--bg)}
+header{background:var(--card);border-bottom:1px solid var(--line);padding:16px 28px}
+header h1{margin:0;font-size:20px}
+header small{color:var(--mut)}
+main{padding:18px 28px 60px;max-width:1280px;margin:0 auto}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:0 0 16px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;text-align:left;font:inherit;color:inherit;cursor:pointer}
+.kpi:hover{border-color:var(--acc)}
+.kpi.on{border-color:var(--acc);box-shadow:0 0 0 2px var(--accbg)}
+.kpi span{display:block;color:var(--mut);font-size:12px}
+.kpi b{font-size:26px;line-height:1.2}
+.kpi i{font-style:normal;font-size:11px;color:var(--mut)}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:16px}
+.panel h2{margin:0 0 4px;font-size:14px}
+.panel p{margin:0 0 8px;color:var(--mut);font-size:12.5px}
+details.panel summary{cursor:pointer;font-weight:600;font-size:14px}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--mut);margin:4px 0}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
+.bar input,.bar select,.bar button{font:inherit;padding:8px 10px;border:1px solid #aab9c8;border-radius:6px;background:#fff;color:var(--ink)}
+.bar input[type=search]{min-width:240px;flex:1}
+.bar button{cursor:pointer}
+.bar button.pri{background:var(--acc);border-color:var(--acc);color:#fff}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.chip{border:1px solid #aab9c8;background:#fff;border-radius:99px;padding:4px 11px;font:inherit;font-size:12.5px;cursor:pointer;color:var(--ink)}
+.chip.on{background:var(--acc);border-color:var(--acc);color:#fff}
+#count{color:var(--mut);margin:0 0 8px}
+.t{display:grid;grid-template-columns:minmax(220px,1.1fr) minmax(260px,1.5fr) minmax(280px,1.4fr);gap:16px;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:10px}
+.t.P1{border-left-color:var(--red)}.t.P2{border-left-color:#d9822b}.t.P3{border-left-color:#7a96b3}.t.P4{border-left-color:#c8d3de}
+.t.done{background:#f8fbf9}
+.id{font-weight:700}
+.badge{display:inline-block;padding:1px 8px;border-radius:99px;font-size:11.5px;font-weight:600;margin:2px 4px 2px 0}
+.b-P1{background:var(--redbg);color:var(--red)}.b-P2{background:var(--ambbg);color:var(--amb)}.b-P3,.b-P4{background:#eaf0f6;color:var(--mut)}
+.b-age{background:var(--ambbg);color:var(--amb)}.b-old{background:var(--redbg);color:var(--red)}
+.b-eng{background:var(--blubg);color:var(--blu)}.b-l1{background:#eaf0f6;color:var(--mut)}
+.b-sig{background:var(--ambbg);color:var(--amb)}
+.b-ok{background:var(--accbg);color:var(--acc)}
+.mut{color:var(--mut);font-size:12.5px}
+.act{font-weight:600;margin:0 0 6px}
+.chk label{display:flex;gap:7px;align-items:flex-start;margin:3px 0;font-size:13px}
+.why{background:var(--bg);border-radius:6px;padding:6px 8px;font-size:12.5px;color:var(--mut);margin:6px 0}
+.rv{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.rv label{font-size:11.5px;color:var(--mut);display:block}
+.rv select,.rv input,.rv textarea{width:100%;font:inherit;padding:6px 8px;border:1px solid #aab9c8;border-radius:6px;background:#fff}
+.rv .full{grid-column:1/3}
+.rv textarea{height:54px;resize:vertical}
+.rv button{font:inherit;padding:7px 12px;border-radius:6px;border:1px solid var(--acc);background:var(--acc);color:#fff;cursor:pointer}
+.rv .row{grid-column:1/3;display:flex;gap:8px;align-items:center}
+.rv .row .clr{background:#fff;color:var(--ink);border-color:#aab9c8}
+.empty{text-align:center;color:var(--mut);padding:40px}
+.toast{position:fixed;bottom:18px;right:18px;background:var(--ink);color:#fff;padding:9px 14px;border-radius:8px;opacity:0;transition:.2s;pointer-events:none}
+.toast.show{opacity:1}
+@media(max-width:900px){.t{grid-template-columns:1fr}main,header{padding-left:14px;padding-right:14px}}
+@media print{.bar,.chips,.rv button,.toast,details.panel{display:none}body{background:#fff}.t{break-inside:avoid}}
+</style>
+
+<header>
+  <h1>RideOps / Queue Control</h1>
+  <small>Support lead workspace &bull; snapshot 30 September 2026, end of day IST &bull; local pilot, not production &bull; data and notes stay in this browser</small>
+</header>
+<main>
+  <div class="kpis" id="kpis"></div>
+
+  <details class="panel" id="trend" open>
+    <summary>Weekly scorecard: arrivals, closures and backlog together</summary>
+    <p>Weeks end Friday 23:59 IST; the last bucket is the 5 days to the 30 Sep cutoff. Backlog = created by the week end and not finally closed (reopened tickets stay outstanding until final closure).</p>
+    <div class="legend"><span><i style="background:#7a96b3"></i>Arrivals</span><span><i style="background:#0f6e56"></i>Final closures</span><span><i style="background:#b42318"></i>Backlog at week end</span></div>
+    <div id="chart"></div>
+  </details>
+
+  <div class="bar">
+    <input id="q" type="search" placeholder="Search ticket, client, category, agent, description">
+    <select id="owner"><option value="">All owners</option><option>Open - with L1</option><option>Open - with Engineering</option></select>
+    <select id="priority"><option value="">All priorities</option><option>P1</option><option>P2</option><option>P3</option><option>P4</option></select>
+    <select id="category"><option value="">All categories</option></select>
+    <select id="sort"><option value="pri">Sort: priority, then oldest</option><option value="age">Sort: oldest first</option><option value="hand">Sort: most handoffs</option></select>
+    <button id="export" class="pri">Export action queue CSV</button>
+    <button id="backup">Backup reviews</button>
+    <button id="restore">Restore reviews</button>
+    <button id="reset">Reset local actions</button>
+    <input id="file" type="file" accept="application/json" hidden>
+  </div>
+  <div class="chips" id="chips"></div>
+  <p id="count"></p>
+  <div id="list"></div>
+  <p class="mut">Prioritize P1 first, then P2 to P4, oldest first. Review returned and configuration cases before another escalation. Historical outcomes are review signals, not proof of the current cause. Reviews are pilot records, not ticket status or closures.</p>
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+const data=/*DATA*/[];
+const CUTOFF=Date.parse('2026-10-01T00:00:00+05:30');
+const ts=s=>s?Date.parse(s.replace(' ','T')+':00+05:30'):null;
+const DAY=86400000;
+const age=r=>(CUTOFF-ts(r.created_at))/DAY;
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const $=id=>document.getElementById(id);
+const open=data.filter(r=>!r.final_closed_at);
+const PRI={P1:1,P2:2,P3:3,P4:4};
+const OWNERS=[...new Set(data.map(r=>r.assigned_agent).filter(Boolean))].sort();
+let KEY='rideops-actions-v2',store={},memOnly=false,chip=null;
+try{store=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){memOnly=true}
+function persist(){try{localStorage.setItem(KEY,JSON.stringify(store))}catch(e){memOnly=true;toast('Storage blocked here: export or backup before closing')}}
+function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove('show'),2400)}
+
+// ---- suggested action + evidence checklist (transparent rules) ----
+function plan(r){
+  const o=r.eng_outcome||'';
+  if(r.priority==='P1')return{k:'p1',act:'Immediate incident review; do not delay escalation',chk:['Incident owner assigned','Client impact confirmed','Engineering paged / aware','Client update sent']};
+  if(o.includes('Insufficient'))return{k:'info',act:'Collect reproduction evidence before re-escalating',chk:['Reproduction steps','Booking / trip / user IDs','Timestamps','Screenshots or logs']};
+  if(o.includes('Config'))return{k:'cfg',act:'Verify configuration and permissions with L1',chk:['Client config checked','User permissions checked','Compared with a working client','Fix or escalation reason noted']};
+  if(o.includes('Duplicate'))return{k:'dup',act:'Link the known issue; send client update',chk:['Known issue linked','Client update sent','Ticket parked on the known issue']};
+  if(String(r.status).includes('Engineering'))return{k:'eng',act:'Request engineering owner, ETA and next update',chk:['Engineering owner named','ETA recorded','Next update time set']};
+  return{k:'l1',act:'Run category checks; confirm client impact and next update',chk:['Category checks run','Client impact confirmed','Client update sent','Next update time set']};
+}
+function signals(r){
+  const s=[],h=+r.eng_handoffs||0;
+  if(h>=2)s.push(h+' engineering handoffs so far (median resolution rises with each handoff)');
+  if(r.eng_outcome)s.push('Last engineering outcome: '+r.eng_outcome);
+  if(+r.reopen_count>0)s.push('Reopened '+r.reopen_count+'x');
+  if(r.client_tier==='Enterprise')s.push('Enterprise client');
+  return s;
+}
+const hot=r=>/Roster|GPS/i.test(r.category);
+
+// ---- review state ----
+const rev=id=>store[id]||null;
+const reviewed=r=>{const v=rev(r.ticket_id);return !!(v&&(v.owner||v.note||v.next||(v.checks&&v.checks.length)))};
+const dueNow=r=>{const v=rev(r.ticket_id);return v&&v.next&&Date.parse(v.next)<=Date.now()};
+
+// ---- KPIs (click to filter) ----
+const KP=[
+ ['all','Open tickets',()=>open.length,'backlog at cutoff'],
+ ['eng','With engineering',()=>open.filter(r=>r.status.includes('Engineering')).length,'owner: engineering'],
+ ['esc','Ever escalated',()=>open.filter(r=>r.escalated_to_eng==='Yes').length,'of open tickets'],
+ ['old','Older than 48h',()=>open.filter(r=>age(r)>2).length,'age at cutoff'],
+ ['p1','P1 open',()=>open.filter(r=>r.priority==='P1').length,'review immediately'],
+ ['todo','Not yet reviewed',()=>open.filter(r=>!reviewed(r)).length,'no review recorded'],
+];
+const CHIPS=[
+ ['all','All open',r=>true],
+ ['hot','Roster / GPS',hot],
+ ['hand','2+ handoffs',r=>(+r.eng_handoffs||0)>=2],
+ ['ret','Returned to L1',r=>/returned/i.test(r.eng_outcome)||/Config/.test(r.eng_outcome)],
+ ['todo','Not reviewed',r=>!reviewed(r)],
+ ['due','Update due',dueNow],
+];
+const KF={all:r=>true,eng:r=>r.status.includes('Engineering'),esc:r=>r.escalated_to_eng==='Yes',old:r=>age(r)>2,p1:r=>r.priority==='P1',todo:r=>!reviewed(r)};
+let kpi='all';
+
+function filtered(){
+  const text=$('q').value.toLowerCase(),o=$('owner').value,p=$('priority').value,c=$('category').value;
+  const cf=(CHIPS.find(x=>x[0]===chip)||[])[2];
+  let rows=open.filter(r=>KF[kpi](r)&&(!cf||cf(r))&&(!o||r.status===o)&&(!p||r.priority===p)&&(!c||r.category===c)
+    &&[r.ticket_id,r.client_name,r.category,r.assigned_agent,r.description].join(' ').toLowerCase().includes(text));
+  const s=$('sort').value;
+  rows.sort((a,b)=>s==='age'?age(b)-age(a):s==='hand'?(+b.eng_handoffs||0)-(+a.eng_handoffs||0)||age(b)-age(a):PRI[a.priority]-PRI[b.priority]||age(b)-age(a));
+  return rows;
+}
+
+function renderKpis(){
+  $('kpis').innerHTML=KP.map(([k,l,f,sub])=>`<button class="kpi${kpi===k?' on':''}" data-k="${k}"><span>${l}</span><b>${f()}</b><i>${sub}</i></button>`).join('');
+}
+function renderChips(){
+  $('chips').innerHTML=CHIPS.map(([k,l,f])=>`<button class="chip${(chip||'all')===k?' on':''}" data-c="${k}">${l} (${open.filter(f).length})</button>`).join('');
+}
+
+function card(r){
+  const p=plan(r),a=age(r),v=rev(r.ticket_id)||{},sg=signals(r),eng=r.status.includes('Engineering');
+  const ageB=a>7?`<span class="badge b-old">${a.toFixed(1)} days</span>`:a>2?`<span class="badge b-age">${a.toFixed(1)} days</span>`:`<span class="badge b-l1">${a.toFixed(1)} days</span>`;
+  const own=['',...OWNERS,'Engineering'].map(x=>`<option${(v.owner||'')===x?' selected':''}>${esc(x)}</option>`).join('');
+  const chk=p.chk.map((c,i)=>`<label><input type="checkbox" data-i="${i}"${(v.checks||[]).includes(c)?' checked':''} value="${esc(c)}"> ${esc(c)}</label>`).join('');
+  return `<div class="t ${r.priority}${reviewed(r)?' done':''}" data-id="${esc(r.ticket_id)}">
+  <div>
+    <div class="id">${esc(r.ticket_id)} <span class="mut">&bull; ${esc(r.client_name)}</span></div>
+    <div><span class="badge b-${r.priority}">${r.priority}</span>${ageB}<span class="badge ${eng?'b-eng':'b-l1'}">${eng?'With engineering':'With L1'}</span>${reviewed(r)?'<span class="badge b-ok">Reviewed</span>':''}${dueNow(r)?'<span class="badge b-old">Update due</span>':''}</div>
+    <div style="margin-top:6px">${esc(r.category)}</div>
+    <div class="mut">${esc(r.description)}</div>
+    <div class="mut" style="margin-top:4px">${esc(r.assigned_agent)} &bull; ${esc(r.client_tier)} &bull; via ${esc(r.channel)}</div>
+  </div>
+  <div>
+    <p class="act">${esc(p.act)}</p>
+    <div class="chk">${chk}</div>
+    ${sg.length?`<div class="why"><b>Why flagged:</b> ${sg.map(esc).join(' &bull; ')}</div>`:''}
+  </div>
+  <div class="rv">
+    <div><label>Owner of next step</label><select data-f="owner">${own}</select></div>
+    <div><label>Next update due (IST)</label><input type="datetime-local" data-f="next" value="${esc(v.next||'')}"></div>
+    <div class="full"><label>Note</label><textarea data-f="note" placeholder="Checks done, blockers, what the client was told">${esc(v.note||'')}</textarea></div>
+    <div class="row"><button data-a="save">Save review</button><button class="clr" data-a="clear">Clear</button><span class="mut">${v.saved?'Saved '+esc(v.saved):''}</span></div>
+  </div></div>`;
+}
+
+function render(){
+  renderKpis();renderChips();
+  const rows=filtered();
+  $('count').textContent=rows.length+' of '+open.length+' open tickets shown'+(memOnly?' (storage blocked: reviews are in memory only)':'');
+  $('list').innerHTML=rows.length?rows.map(card).join(''):'<div class="empty">No tickets match these filters.</div>';
+}
+
+// ---- events (delegated; typing never re-renders) ----
+$('kpis').onclick=e=>{const b=e.target.closest('[data-k]');if(!b)return;kpi=b.dataset.k;chip=null;render()};
+$('chips').onclick=e=>{const b=e.target.closest('[data-c]');if(!b)return;chip=b.dataset.c==='all'?null:b.dataset.c;render()};
+for(const id of ['q','owner','priority','category','sort'])$(id).oninput=render;
+$('list').onclick=e=>{
+  const b=e.target.closest('[data-a]');if(!b)return;
+  const t=b.closest('.t'),id=t.dataset.id;
+  if(b.dataset.a==='clear'){delete store[id];persist();toast('Cleared '+id);render();return}
+  const g=f=>t.querySelector('[data-f='+f+']').value.trim();
+  const checks=[...t.querySelectorAll('input[type=checkbox]:checked')].map(x=>x.value);
+  const v={owner:g('owner'),next:g('next'),note:g('note'),checks,saved:new Date().toLocaleString('en-IN',{timeZone:'Asia/Kolkata',dateStyle:'medium',timeStyle:'short'})};
+  if(!v.owner&&!v.next&&!v.note&&!checks.length)delete store[id];else store[id]=v;
+  persist();toast('Saved '+id);
+  const y=window.scrollY;render();window.scrollTo(0,y);
+};
+$('reset').onclick=()=>{if(confirm('Clear all local reviews?')){store={};try{localStorage.removeItem(KEY)}catch(e){}render()}};
+$('backup').onclick=()=>download('rideops_reviews_backup.json',JSON.stringify(store,null,1),'application/json');
+$('restore').onclick=()=>$('file').click();
+$('file').onchange=e=>{const f=e.target.files[0];if(!f)return;f.text().then(t=>{try{const o=JSON.parse(t);if(typeof o!=='object'||Array.isArray(o))throw 0;store=Object.assign(store,o);persist();render();toast('Restored '+Object.keys(o).length+' reviews')}catch(x){toast('Not a valid backup file')}});e.target.value=''};
+
+function download(name,text,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click();URL.revokeObjectURL(a.href)}
+$('export').onclick=()=>{
+  const q=v=>'"'+String(v??'').replace(/"/g,'""').replace(/^([=+\-@])/,"'$1")+'"';
+  const rows=[['ticket_id','client','priority','age_days','status','category','agent','handoffs','last_eng_outcome','suggested_action','checks_done','owner','next_update_due','note'],
+   ...filtered().map(r=>{const v=rev(r.ticket_id)||{};return[r.ticket_id,r.client_name,r.priority,age(r).toFixed(2),r.status,r.category,r.assigned_agent,r.eng_handoffs,r.eng_outcome,plan(r).act,(v.checks||[]).join('; '),v.owner||'',v.next||'',v.note||'']})];
+  download('rideops_action_queue.csv',rows.map(r=>r.map(q).join(',')).join('\n'),'text/csv');
+  toast('Exported '+(rows.length-1)+' tickets');
+};
+
+// ---- weekly scorecard (computed from the snapshot) ----
+function weekly(){
+  const first=ts(data.reduce((m,r)=>r.created_at<m?r.created_at:m,data[0].created_at));
+  const ends=[];let d=new Date(first);
+  const fri=x=>{const t=new Date(x);const ist=new Date(t.getTime()+19800000);const dow=ist.getUTCDay();const add=(5-dow+7)%7;return Date.UTC(ist.getUTCFullYear(),ist.getUTCMonth(),ist.getUTCDate()+add,23,59)-19800000};
+  let e=fri(first);while(e<CUTOFF-DAY*0.01){ends.push(e);e+=7*DAY}
+  ends.push(CUTOFF);
+  let prev=0;const out=[];
+  for(const end of ends){
+    const lo=prev;prev=end;
+    const arr=data.filter(r=>{const t=ts(r.created_at);return t>lo&&t<=end}).length;
+    const clo=data.filter(r=>{const t=ts(r.final_closed_at);return t&&t>lo&&t<=end}).length;
+    const bl=data.filter(r=>ts(r.created_at)<=end&&(!r.final_closed_at||ts(r.final_closed_at)>end)).length;
+    out.push({end,arr,clo,bl});
+  }
+  return out;
+}
+function chart(){
+  const w=weekly(),W=Math.max(640,w.length*58),H=190,L=32,B=26,T=10,mx=Math.max(...w.map(x=>Math.max(x.arr,x.clo,x.bl)),1);
+  const y=v=>T+(H-T-B)*(1-v/mx),bw=(W-L)/w.length;
+  const fmt=t=>new Date(t-60000+19800000).toLocaleDateString('en-GB',{day:'numeric',month:'short',timeZone:'UTC'});
+  let s=`<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Weekly arrivals, closures and backlog">`;
+  for(const g of [0,.5,1]){const v=Math.round(mx*g);s+=`<line x1="${L}" x2="${W}" y1="${y(v)}" y2="${y(v)}" stroke="#e3e9f0"/><text x="${L-5}" y="${y(v)+4}" font-size="10" text-anchor="end" fill="#526579">${v}</text>`}
+  let pts=[];
+  w.forEach((x,i)=>{const cx=L+i*bw+bw/2,b=bw*.3;
+    s+=`<rect x="${cx-b-1}" y="${y(x.arr)}" width="${b}" height="${H-B-y(x.arr)}" fill="#7a96b3"><title>${fmt(x.end)}: ${x.arr} arrivals</title></rect>`;
+    s+=`<rect x="${cx+1}" y="${y(x.clo)}" width="${b}" height="${H-B-y(x.clo)}" fill="#0f6e56"><title>${fmt(x.end)}: ${x.clo} final closures</title></rect>`;
+    s+=`<text x="${cx}" y="${H-10}" font-size="10" text-anchor="middle" fill="#526579">${fmt(x.end)}</text>`;
+    pts.push([cx,y(x.bl),x]);
+  });
+  s+=`<polyline fill="none" stroke="#b42318" stroke-width="2" points="${pts.map(p=>p[0]+','+p[1]).join(' ')}"/>`;
+  for(const [cx,cy,x] of pts)s+=`<circle cx="${cx}" cy="${cy}" r="3" fill="#b42318"><title>${fmt(x.end)}: backlog ${x.bl}</title></circle>`;
+  const last=pts[pts.length-1];s+=`<text x="${last[0]}" y="${last[1]-8}" font-size="11" font-weight="700" text-anchor="middle" fill="#b42318">${last[2].bl}</text>`;
+  $('chart').innerHTML=s+'</svg>';
+}
+
+// category filter options
+[...new Set(open.map(r=>r.category))].sort().forEach(c=>{const o=document.createElement('option');o.textContent=c;$('category').appendChild(o)});
+chart();render();
+</script>
+</html>
